@@ -24,7 +24,7 @@ class Greedy:
                 continue
             '''perform the action'''
             driver.remained_capacity -= load_cost
-            driver.current_location = self.loads[load_id].pickup
+            driver.current_location = self.loads[load_id].dropoff
             driver.total_path_cost += load_cost
             driver.load_list.append(load_id)
             ''''''
@@ -65,15 +65,16 @@ class Greedy:
         for load in self.loads.values():
             if load.satisfied: continue
 
-            drv_to_load = Location.calculate_distance(
+            drv_to_pick = Location.calculate_distance(
                 from_loc=driver.current_location,
                 to_loc=load.pickup)
-            load_to_depot = Location.calculate_distance(
+            pick_to_drop = load.cost
+            drop_to_depot = Location.calculate_distance(
                 from_loc=load.dropoff,
                 to_loc=self.depot.location)
-            if driver.remained_capacity > drv_to_load + load_to_depot:
+            if driver.remained_capacity > drv_to_pick + pick_to_drop+drop_to_depot:
                 load_ids.append(load.id)
-                costs.append(drv_to_load)
+                costs.append(drv_to_pick+pick_to_drop)
         '''return min'''
         if len(costs)>0:
             indx = costs.index(min(costs))

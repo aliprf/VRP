@@ -28,6 +28,7 @@ class Driver:
         self.current_location = depot
         self.load_list = []
         self.total_path_cost = 0
+        self.available = True
 
 
 class Depot:
