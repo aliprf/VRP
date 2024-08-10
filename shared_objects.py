@@ -23,12 +23,13 @@ class Location:
 
 
 class Driver:
-    def __init__(self, depot):
+    def __init__(self, depot, id=0):
         self.remained_capacity = 12 * 60
         self.current_location = depot
         self.load_list = []
         self.total_path_cost = 0
         self.available = True
+        self.id = id
 
 
 class Depot:

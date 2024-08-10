@@ -3,39 +3,42 @@ from shared_objects import Depot, Driver, Load, Location
 import random
 
 
-class StochasticGreedy:
-    """this is a Greedy method + an initial guess of number of vehicles"""
+class ImprovedCluster:
+    """this is a ImprovedCluster > an initial guess of number of vehicles"""
 
     def __init__(self, loads):
         self.loads = loads
-        self.satisfied_loads = []
-        self.drivers = []
+        self.satisfied_loads = set()
+        self.drivers = {}
         self.depot = Depot((0, 0))
         self.available_drivers = 0
-
+        self.all_road_lists = set()
     def run(self):
         """"""
         result_paths = []
         driver_costs = []
-        total_costs = 0
+        last_driver_id = 0
         '''_make_guess_on_required_vehicles'''
         potential_no_vehicles = self._make_guess_on_required_vehicles()
         self.available_drivers = potential_no_vehicles
         for i in range(potential_no_vehicles):
-            self.drivers.append(Driver(self.depot.location))
+            self.drivers[i] = Driver(self.depot.location, i)
+            last_driver_id += i
         ''''''
         while len(self.satisfied_loads) != len(self.loads):
             '''check if we need a new driver'''
             if self.available_drivers == 0:
-                self.drivers.append(Driver(self.depot.location))
+                last_driver_id += 1
+                self.drivers[last_driver_id] = Driver(self.depot.location, last_driver_id)
                 self.available_drivers += 1
             '''random driver'''
-            d_ind = random.randint(0, len(self.drivers) - 1)
+            d_ind = random.choice(list(self.drivers.keys()))
+            # d_ind = random.randint(0, last_driver_id)
             # for d_ind in range(len(self.drivers)):
             self._find_and_go_to_lowest(d_ind)
 
         '''results'''
-        for driver in self.drivers:
+        for driver in self.drivers.values():
             result_paths.append(driver.load_list)
             driver_costs.append(driver.total_path_cost)
         return result_paths, driver_costs
@@ -66,22 +69,26 @@ class StochasticGreedy:
         return no_vehicles//3
 
     def _find_and_go_to_lowest(self, d_ind):
-        if self.drivers[d_ind].available is False: return
+        if self.drivers[d_ind].available is False:
+            return
 
         costs = []
         load_ids = []
-        for load in self.loads.values():
-            if load.satisfied: continue
+
+        for load_id in self.loads.keys():
+            if load_id in self.all_road_lists: continue
+            if self.loads[load_id].satisfied or load_id in self.satisfied_loads:
+                continue
 
             drv_to_pick = Location.calculate_distance(
                 from_loc=self.drivers[d_ind].current_location,
-                to_loc=load.pickup)
-            pick_to_drop = load.cost
+                to_loc=self.loads[load_id].pickup)
+            pick_to_drop = self.loads[load_id].cost
             drop_to_depot = Location.calculate_distance(
-                from_loc=load.dropoff,
+                from_loc=self.loads[load_id].dropoff,
                 to_loc=self.depot.location)
             if self.drivers[d_ind].remained_capacity > drv_to_pick + pick_to_drop + drop_to_depot:
-                load_ids.append(load.id)
+                load_ids.append(load_id)
                 costs.append(drv_to_pick + pick_to_drop)
 
         '''find min and go'''
@@ -93,7 +100,7 @@ class StochasticGreedy:
             self.drivers[d_ind].total_path_cost += costs[indx]
             self.drivers[d_ind].remained_capacity -= costs[indx]
 
-            self.satisfied_loads.append(load_id)
+            self.satisfied_loads.add(load_id)
             self.loads[load_id].satisfied = True
         else:
             '''if no capacity, return '''
@@ -107,3 +114,6 @@ class StochasticGreedy:
             self.drivers[d_ind].available = False
 
             self.available_drivers -= 1
+
+        for ld in self.drivers[d_ind].load_list:
+            self.all_road_lists.add(ld)
