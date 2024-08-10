@@ -1,4 +1,5 @@
 from shared_objects import Depot, Driver, Load, Location
+from collections import Counter
 
 import random
 
@@ -22,8 +23,9 @@ class ImprovedCluster:
         potential_no_vehicles = self._make_guess_on_required_vehicles()
         self.available_drivers = potential_no_vehicles
         for i in range(potential_no_vehicles):
-            self.drivers[i] = Driver(self.depot.location, i)
-            last_driver_id += i
+            last_driver_id += i + random.randint(last_driver_id, 10+last_driver_id)
+            self.drivers[last_driver_id] = Driver(self.depot.location, last_driver_id)
+
         ''''''
         while len(self.satisfied_loads) != len(self.loads):
             '''check if we need a new driver'''
@@ -38,9 +40,13 @@ class ImprovedCluster:
             self._find_and_go_to_lowest(d_ind)
 
         '''results'''
+        alllll = []
         for driver in self.drivers.values():
             result_paths.append(driver.load_list)
+            alllll+= driver.load_list
             driver_costs.append(driver.total_path_cost)
+        repeated_keys = [key for key, count in Counter(alllll).items() if count > 1]
+        if len(repeated_keys)> 0: print("@@@@@@@@@@@@@@@")
         return result_paths, driver_costs
 
     def _make_guess_on_required_vehicles(self):
@@ -75,7 +81,9 @@ class ImprovedCluster:
         costs = []
         load_ids = []
 
-        for load_id in self.loads.keys():
+        remained_loads = {k: v for k, v in self.loads.items() if k not in self.satisfied_loads}
+
+        for load_id in remained_loads:
             if load_id in self.all_road_lists: continue
             if self.loads[load_id].satisfied or load_id in self.satisfied_loads:
                 continue
